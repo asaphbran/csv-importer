@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use App\Service\CsvImporter;
 
 #[AsCommand(
     name: 'app:import-products-data',
@@ -16,10 +17,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ImportProductsDataCommand extends Command
 {
-    public function __construct()
+    public function __construct(private CsvImporter $csvImporter)
     {
         parent::__construct();
-    }
+    }   
 
     protected function configure(): void
     {
