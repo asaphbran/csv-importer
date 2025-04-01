@@ -8,8 +8,9 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
+// use Symfony\Component\Console\Style\SymfonyStyle;
 use App\Service\CsvImporter;
+use App\Service\ProductImporter;
 
 #[AsCommand(
     name: 'app:import-products-data',
@@ -17,7 +18,10 @@ use App\Service\CsvImporter;
 )]
 class ImportProductsDataCommand extends Command
 {
-    public function __construct(private CsvImporter $csvImporter)
+    public function __construct(
+        private CsvImporter $csvImporter,
+        private ProductImporter $productImporter
+    )
     {
         parent::__construct();
     }   
@@ -37,6 +41,20 @@ class ImportProductsDataCommand extends Command
 
         $output->writeln("Start process from $file...");
 
+        $output->writeln("Retrieving data from file...");
+
+        $products = $this->csvImporter->parseCsv($file);
+
+        if (empty($products)) {
+            $output->writeln("There has been an error during the retrieval process.");
+            $output->writeln("Please check your file and try again.");
+
+            return Command::FAILURE;
+        }
+
+        $output->writeln("Successfully retrieved data");
+
+        [$processed, $successful, $skipped] = $this->productImporter->import($products, $testMode);
 
 
         return Command::SUCCESS;
