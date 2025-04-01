@@ -18,7 +18,9 @@
         "symfony/yaml": "7.2.*"
     },
     "require-dev": {
-        "symfony/maker-bundle": "^1.62"
+        "phpunit/phpunit": "^12.0",
+        "symfony/maker-bundle": "^1.62",
+        "symfony/phpunit-bridge": "^7.2"
     },
     "config": {
         "allow-plugins": {
