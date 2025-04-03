@@ -23,7 +23,7 @@ class ProductImporter implements ImporterInterface
         $validationErrors = [];
 
         // Fetch existing product SKUs from the database
-        $existingSkuSet = []; // $this->productRepository->findAllBySku();
+        $existingSkuSet = $this->productRepository->findAllBySku();
 
         foreach ($products as $data) {
             $processed++;
