@@ -42,7 +42,7 @@ class ImportProductsDataCommand extends Command
 
         $output->writeln("Retrieving data from file...");
 
-        $products = $this->csvImporter->parseCsv($file);
+        $products = $this->csvImporter->import(['filePath' => $file]);
 
         if (empty($products)) {
             $output->writeln("There has been an error during the retrieval process.");

@@ -2,19 +2,32 @@
 
 namespace App\Service;
 
-use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Reader\Csv;
+use App\Service\ValueHandler;
+use App\Interface\ImporterInterface;
 
-class CsvImporter
+class CsvImporter extends ValueHandler implements ImporterInterface
 {
-    public function parseCsv(string $filePath): array
+    public function import(array $data, bool $testMode = false): array
     {
-        $csv = IOFactory::load($filePath);
-        $worksheet = $csv->getActiveSheet();
+        if (empty($data['filePath']) || !file_exists($data['filePath']) || !is_readable($data['filePath'])) {
+            throw new \Exception("Unable to read the CSV file: " . ($data['filePath'] ?? 'Unknown'));
+        }
+
+        $reader = new Csv();
+        $reader->setDelimiter(','); // Adjust if necessary (e.g., ';' for semicolon-delimited CSVs)
+        $reader->setEnclosure('"'); // Handles quoted values
+        $reader->setSheetIndex(0);  // Ensure the first sheet is read
+        $reader->setInputEncoding('UTF-8'); // Ensure correct encoding
+
+        $spreadsheet = $reader->load($data['filePath']);
+        $worksheet = $spreadsheet->getActiveSheet();
 
         $rows = [];
         $header = [];
+        $rowIndex = 0;
 
-        foreach ($worksheet->getRowIterator() as $rowIndex => $row) {
+        foreach ($worksheet->getRowIterator() as $row) {
             $cellIterator = $row->getCellIterator();
             $cellIterator->setIterateOnlyExistingCells(false); // Ensures empty cells are included
 
@@ -25,8 +38,13 @@ class CsvImporter
                 $rowData[] = $value;
             }
 
+            // Skip empty rows (if they contain only null or empty values)
+            if (empty(array_filter($rowData))) {
+                continue;
+            }
+
             // First row is the header
-            if ($rowIndex === 1) {
+            if ($rowIndex === 0) {
                 $header = $rowData;
             } else {
                 // Ensure column count matches header before processing
@@ -37,55 +55,13 @@ class CsvImporter
                 // Convert values to UTF-8
                 $rowData = array_map([$this, 'convertToUtf8'], $rowData);
 
-                // Fill missing values with defaults, keeping the same keys as header
+                // Apply missing value handling
                 $rows[] = $this->handleMissingValues($header, $rowData);
             }
+            
+            $rowIndex++;
         }
 
         return $rows;
-    }
-
-    private function sanitizeValue(?string $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        // Trim spaces and remove currency symbols
-        $value = trim($value);
-        $value = preg_replace('/[\p{Sc}]/u', '', $value);
-
-        return $value;
-    }
-
-
-    private function convertToUtf8(?string $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        return mb_convert_encoding($value, 'UTF-8', 'auto');
-    }
-
-    private function handleMissingValues(array $header, array $rowData): array
-    {
-        // Define default values for missing data
-        $defaults = [
-            'Product Code' => 'UNKNOWN',
-            'Product Name' => 'No Name',
-            'Product Description' => 'No Description',
-            'Stock' => 0,
-            'Cost in GBP' => 0.0,
-            'Discontinued' => 'no',
-        ];
-
-        // Merge only the keys that exist in the header
-        $processedRow = [];
-        foreach ($header as $index => $key) {
-            $processedRow[$key] = $rowData[$index] ?? ($defaults[$key] ?? null);
-        }
-
-        return $processedRow;
     }
 }

@@ -90,4 +90,9 @@ class Product
     {
         return $this->timestamp;
     }
+
+    public function setTimestamp(): void
+    {
+        $this->timestamp = new \DateTime();
+    }
 }

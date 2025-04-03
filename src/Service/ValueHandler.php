@@ -4,7 +4,7 @@ namespace App\Service;
 
 class ValueHandler
 {
-    public function sanitizeValue(?string $value): ?string
+    protected function sanitizeValue(?string $value): ?string
     {
         if ($value === null) {
             return null;
@@ -18,7 +18,7 @@ class ValueHandler
     }
 
 
-    public function convertToUtf8(?string $value): ?string
+    protected function convertToUtf8(?string $value): ?string
     {
         if ($value === null) {
             return null;
@@ -27,7 +27,7 @@ class ValueHandler
         return mb_convert_encoding($value, 'UTF-8', 'auto');
     }
 
-    public function handleMissingValues(array $header, array $rowData): array
+    protected function handleMissingValues(array $header, array $rowData): array
     {
         // Define default values for missing data
         $defaults = [
@@ -42,7 +42,9 @@ class ValueHandler
         // Merge only the keys that exist in the header
         $processedRow = [];
         foreach ($header as $index => $key) {
-            $processedRow[$key] = $rowData[$index] ?? ($defaults[$key] ?? null);
+            $processedRow[$key] = !empty($rowData[$index]) ? $rowData[$index] : ($defaults[$key] ?? null);
+
+            // $processedRow[$key] = $rowData[$index] ?? ($defaults[$key] ?? null);
         }
 
         return $processedRow;
