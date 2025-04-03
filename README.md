@@ -13,5 +13,6 @@ Things to consider here:
 
 1. This project uses the PHP version 8.2 (my machine runs PHP 8.4)
 2. Since I'm using PHP 8.2, this project uses the latest stable version of Symfony (Symfony 7.2)
+3. Since this is a Symfony project, remember to run the migrations
 
 Thank you for stopping by!
