@@ -43,8 +43,6 @@ class ValueHandler
         $processedRow = [];
         foreach ($header as $index => $key) {
             $processedRow[$key] = !empty($rowData[$index]) ? $rowData[$index] : ($defaults[$key] ?? null);
-
-            // $processedRow[$key] = $rowData[$index] ?? ($defaults[$key] ?? null);
         }
 
         return $processedRow;

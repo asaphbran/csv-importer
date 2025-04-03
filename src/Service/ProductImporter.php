@@ -2,40 +2,28 @@
 
 namespace App\Service;
 
-use App\Entity\Product;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\Product;
+use App\Repository\ProductRepository;
 use App\Interface\ImporterInterface;
+use App\Validator\ProductValidator;
 
 class ProductImporter implements ImporterInterface
 {
-    private float $minCost;
-    private int $minStock;
-    private float $maxCost;
-
     public function __construct(
         private EntityManagerInterface $entityManager,
-        float $minCost = 5.0,
-        int $minStock = 10,
-        float $maxCost = 1000.0
-    ) {
-        $this->minCost = $minCost;
-        $this->minStock = $minStock;
-        $this->maxCost = $maxCost;
-    }
+        private ProductRepository $productRepository,
+        private ProductValidator $productValidator,
+    ) {}
 
     public function import(array $products, bool $testMode = false): array
     {
         $processed = $successful = $skipped = 0;
         $seenProductCodes = [];
+        $validationErrors = [];
 
         // Fetch existing product SKUs from the database
-        $existingProducts = $this->entityManager->getRepository(Product::class)
-            ->createQueryBuilder('p')
-            ->select('p.sku')
-            ->getQuery()
-            ->getResult();
-        
-        $existingSkuSet = $existingProducts ? array_flip(array_column($existingProducts, 'sku')) : [];
+        $existingSkuSet = []; // $this->productRepository->findAllBySku();
 
         foreach ($products as $data) {
             $processed++;
@@ -52,16 +40,6 @@ class ProductImporter implements ImporterInterface
                 continue;
             }
 
-            // Business rules: skip based on cost & stock conditions
-            if ($data['Cost in GBP'] < $this->minCost && $data['Stock'] < $this->minStock) {
-                $skipped++;
-                continue;
-            }
-            if ($data['Cost in GBP'] > $this->maxCost) {
-                $skipped++;
-                continue;
-            }
-
             // Track processed Product Code to avoid duplicates within CSV
             $seenProductCodes[$data['Product Code']] = true;
 
@@ -69,13 +47,24 @@ class ProductImporter implements ImporterInterface
             $product = new Product();
             $product->setSku($data['Product Code']);
             $product->setName($data['Product Name']);
-            $product->setDescription($data['Product Description'] ?? 'No Description');
+            $product->setDescription($data['Product Description'] ?? "");
+            $product->setCostInGbp($data['Cost in GBP']);
+            $product->setStock((int) $data['Stock']);
             $product->setTimestamp();
             $product->setAddedAt(new \DateTime());
 
             // Handle discontinued products
             if (!empty($data['Discontinued']) && strtolower($data['Discontinued']) === 'yes') {
                 $product->setDiscontinuedAt(new \DateTime());
+            }
+
+            // Validate the product using ProductValidator
+            $errors = $this->productValidator->validate($product);
+
+            if (!empty($errors)) {
+                $skipped++;
+                $validationErrors[$data['Product Code']] = $errors;
+                continue;
             }
 
             if (!$testMode) {
@@ -89,6 +78,6 @@ class ProductImporter implements ImporterInterface
             $this->entityManager->flush();
         }
 
-        return [$processed, $successful, $skipped];
+        return [$processed, $successful, $skipped, $validationErrors];
     }
 }

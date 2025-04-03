@@ -53,9 +53,28 @@ class ImportProductsDataCommand extends Command
 
         $output->writeln("Successfully retrieved data");
 
-        [$processed, $successful, $skipped] = $this->productImporter->import($products, $testMode);
+        [$processed, $successful, $skipped, $validationErrors] = $this->productImporter->import($products, $testMode);
 
-        $output->writeln("Processed: $processed, Successful: $successful, Skipped: $skipped");
+        if (!empty($validationErrors)) {
+            $output->writeln("\nSome value had errors. This is a breakdown of what I found:");
+
+            foreach ($validationErrors as $productCode => $errors) {
+                $hasMoreThanOneError = count($errors) > 1;
+                $issuesWordFormattedInPlural = "issue".($hasMoreThanOneError ? "s" : "");
+
+                $output->writeln("\nProduct with product code: $productCode had the following $issuesWordFormattedInPlural: ");
+
+                if ($hasMoreThanOneError) {
+                    foreach ($errors as $error) {
+                        $output->writeln($error);
+                    }
+                } else {
+                    $output->writeln($errors[0]);
+                }
+            }
+        }
+
+        $output->writeln("\nProcessed: $processed, Successful: $successful, Skipped: $skipped");
 
         return Command::SUCCESS;
     }

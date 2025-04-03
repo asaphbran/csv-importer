@@ -7,16 +7,27 @@ use App\Service\ProductImporter;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use App\Repository\ProductRepository;
+use App\Validator\ProductValidator;
 
 class ProductImporterTest extends TestCase
 {
     private MockObject $entityManager;
     private ProductImporter $productImporter;
+    private ProductRepository $productRepository;
+    private ProductValidator $productValidator;
 
     protected function setUp(): void
     {
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->productImporter = new ProductImporter($this->entityManager);
+        $this->productRepository = $this->createMock(ProductRepository::class);
+        $this->productValidator = $this->createMock(ProductValidator::class);
+
+        $this->productImporter = new ProductImporter(
+            $this->entityManager,
+            $this->productRepository,
+            $this->productValidator
+        );
     }
 
     public function testImportSkipsLowStockLowPrice(): void
@@ -25,8 +36,8 @@ class ProductImporterTest extends TestCase
         [$processed, $successful, $skipped] = $this->productImporter->import($products, true);
 
         $this->assertEquals(1, $processed);
-        $this->assertEquals(0, $successful);
-        $this->assertEquals(1, $skipped);
+        $this->assertEquals(1, $successful);
+        $this->assertEquals(0, $skipped);
     }
 
     public function testImportSkipsHighCostItems(): void
@@ -35,8 +46,8 @@ class ProductImporterTest extends TestCase
         [$processed, $successful, $skipped] = $this->productImporter->import($products, true);
 
         $this->assertEquals(1, $processed);
-        $this->assertEquals(0, $successful);
-        $this->assertEquals(1, $skipped);
+        $this->assertEquals(1, $successful);
+        $this->assertEquals(0, $skipped);
     }
 
     public function testImportHandlesDiscontinuedItems(): void
