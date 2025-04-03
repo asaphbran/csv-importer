@@ -67,6 +67,7 @@ class ProductImporter implements ImporterInterface
                 continue;
             }
 
+            // If test mode is true, won't persist
             if (!$testMode) {
                 $this->entityManager->persist($product);
             }
@@ -74,6 +75,7 @@ class ProductImporter implements ImporterInterface
             $successful++;
         }
 
+        // If test mode is true, won't flush, which means that won't insert into the database
         if (!$testMode) {
             $this->entityManager->flush();
         }

@@ -10,12 +10,13 @@ class CsvImporter extends ValueHandler implements ImporterInterface
 {
     public function import(array $data, bool $testMode = false): array
     {
+        // Before going in to import the data, we make sure that the file exists and is readable 
         if (empty($data['filePath']) || !file_exists($data['filePath']) || !is_readable($data['filePath'])) {
             throw new \Exception("Unable to read the CSV file: " . ($data['filePath'] ?? 'Unknown'));
         }
 
         $reader = new Csv();
-        $reader->setDelimiter(','); // Adjust if necessary (e.g., ';' for semicolon-delimited CSVs)
+        $reader->setDelimiter(',');
         $reader->setEnclosure('"'); // Handles quoted values
         $reader->setSheetIndex(0);  // Ensure the first sheet is read
         $reader->setInputEncoding('UTF-8'); // Ensure correct encoding
